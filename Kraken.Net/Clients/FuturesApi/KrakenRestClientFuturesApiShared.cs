@@ -102,7 +102,15 @@ namespace Kraken.Net.Clients.FuturesApi
 
             return HttpResult.Ok(result, ExchangeHelpers.ApplyFilter(result.Data.Klines, x => x.Timestamp, request.StartTime, request.EndTime, direction)
                     .Select(x => 
-                        new SharedKline(request.Symbol, symbol, x.Timestamp, x.ClosePrice, x.HighPrice, x.LowPrice, x.OpenPrice, x.Volume))
+                        new SharedKline(
+                            request.Symbol,
+                            symbol,
+                            x.Timestamp,
+                            x.ClosePrice,
+                            x.HighPrice,
+                            x.LowPrice,
+                            x.OpenPrice,
+                            new SharedOrderQuantity(x.Volume)))
                     .ToArray(), nextPageRequest);
         }
 
@@ -156,7 +164,7 @@ namespace Kraken.Net.Clients.FuturesApi
                 data = data.Take(request.Limit.Value).ToArray();
 
             return HttpResult.Ok(result, data.Select(x => 
-            new SharedTrade(request.Symbol, symbol, x.Quantity!.Value, x.Price, x.Timestamp!.Value)
+            new SharedTrade(request.Symbol, symbol, new SharedOrderQuantity(x.Quantity!.Value, x.NotionalAmount), x.Price, x.Timestamp!.Value)
             {
                 Side = x.Side == OrderSide.Buy ? SharedOrderSide.Buy : SharedOrderSide.Sell
             }).ToArray());
@@ -299,7 +307,15 @@ namespace Kraken.Net.Clients.FuturesApi
 
             var time = DateTime.UtcNow;
 
-            return HttpResult.Ok(resultTicker, new SharedFuturesTicker(ExchangeSymbolCache.ParseSymbol(_topicId, EnvironmentName, null, resultTicker.Data.Symbol), resultTicker.Data.Symbol, resultTicker.Data.LastPrice, null, null, resultTicker.Data.Volume24h, (resultTicker.Data.OpenPrice24h > 0 && resultTicker.Data.LastPrice > 0) ? Math.Round(resultTicker.Data.LastPrice.Value / resultTicker.Data.OpenPrice24h.Value * 100 - 100, 2) : null)
+            return HttpResult.Ok(resultTicker, 
+                new SharedFuturesTicker(
+                    ExchangeSymbolCache.ParseSymbol(_topicId, EnvironmentName, null, resultTicker.Data.Symbol),
+                    resultTicker.Data.Symbol, 
+                    resultTicker.Data.LastPrice,
+                    null,
+                    null,
+                    new SharedOrderQuantity(resultTicker.Data.Volume24h, resultTicker.Data.Volume24hQuote),
+                    (resultTicker.Data.OpenPrice24h > 0 && resultTicker.Data.LastPrice > 0) ? Math.Round(resultTicker.Data.LastPrice.Value / resultTicker.Data.OpenPrice24h.Value * 100 - 100, 2) : null)
             {
                 MarkPrice = resultTicker.Data.MarkPrice,
                 IndexPrice = resultTicker.Data.IndexPrice,
@@ -329,7 +345,15 @@ namespace Kraken.Net.Clients.FuturesApi
             }
 
             var time = DateTime.UtcNow;
-            return HttpResult.Ok(resultTicker, data.Select(x => new SharedFuturesTicker(ExchangeSymbolCache.ParseSymbol(_topicId, EnvironmentName, null, x.Symbol), x.Symbol, x.LastPrice, null, null, x.Volume24h, (x.OpenPrice24h > 0 && x.LastPrice > 0) ? Math.Round(x.LastPrice.Value / x.OpenPrice24h.Value * 100 - 100, 2) : null)
+            return HttpResult.Ok(resultTicker, data.Select(x => 
+            new SharedFuturesTicker(
+                ExchangeSymbolCache.ParseSymbol(_topicId, EnvironmentName, null, x.Symbol),
+                x.Symbol,
+                x.LastPrice,
+                null,
+                null,
+                new SharedOrderQuantity(x.Volume24h, x.Volume24hQuote),
+                (x.OpenPrice24h > 0 && x.LastPrice > 0) ? Math.Round(x.LastPrice.Value / x.OpenPrice24h.Value * 100 - 100, 2) : null)
             {
                 MarkPrice = x.MarkPrice,
                 IndexPrice = x.IndexPrice,

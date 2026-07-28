@@ -4,6 +4,7 @@ using Kraken.Net.Enums;
 using Kraken.Net.Interfaces.Clients.SpotApi;
 using Kraken.Net.Objects.Models;
 using System.Linq;
+using System.Timers;
 
 namespace Kraken.Net.Clients.SpotApi
 {
@@ -80,7 +81,15 @@ namespace Kraken.Net.Clients.SpotApi
 
             return HttpResult.Ok(result, ExchangeHelpers.ApplyFilter(data, x => x.OpenTime, request.StartTime, request.EndTime, direction)
                     .Select(x => 
-                        new SharedKline(request.Symbol, symbol, x.OpenTime, x.ClosePrice, x.HighPrice, x.LowPrice, x.OpenPrice, x.Volume))
+                        new SharedKline(
+                            request.Symbol, 
+                            symbol, 
+                            x.OpenTime,
+                            x.ClosePrice, 
+                            x.HighPrice, 
+                            x.LowPrice, 
+                            x.OpenPrice,
+                            new SharedOrderQuantity(x.Volume, x.VolumeWeightedAveragePrice * x.Volume)))
                     .ToArray(), nextPageRequest);
         }
 
@@ -231,9 +240,16 @@ namespace Kraken.Net.Clients.SpotApi
                 return HttpResult.Fail<SharedSpotTicker>(result);
 
             var ticker = result.Data.Single();
-            return HttpResult.Ok(result, new SharedSpotTicker(ExchangeSymbolCache.ParseSymbol(_topicId, EnvironmentName, null, ticker.Value.Symbol), ticker.Value.Symbol, ticker.Value.LastTrade.Price, ticker.Value.High.Value24H, ticker.Value.Low.Value24H, ticker.Value.Volume.Value24H, ticker.Value.OpenPrice == 0 ? null : Math.Round(ticker.Value.LastTrade.Price / ticker.Value.OpenPrice * 100 - 100, 2))
+            return HttpResult.Ok(result, 
+                new SharedSpotTicker(
+                    ExchangeSymbolCache.ParseSymbol(_topicId, EnvironmentName, null, ticker.Value.Symbol), 
+                    ticker.Value.Symbol, 
+                    ticker.Value.LastTrade.Price,
+                    ticker.Value.High.Value24H,
+                    ticker.Value.Low.Value24H, 
+                    new SharedOrderQuantity(ticker.Value.Volume.Value24H, ticker.Value.VolumeWeightedAveragePrice.Value24H * ticker.Value.Volume.Value24H),
+                    ticker.Value.OpenPrice == 0 ? null : Math.Round(ticker.Value.LastTrade.Price / ticker.Value.OpenPrice * 100 - 100, 2))
             {
-                QuoteVolume = ticker.Value.VolumeWeightedAveragePrice.Value24H * ticker.Value.Volume.Value24H
             });
         }
 
@@ -248,9 +264,16 @@ namespace Kraken.Net.Clients.SpotApi
             if (!result.Success)
                 return HttpResult.Fail<SharedSpotTicker[]>(result);
 
-            return HttpResult.Ok(result, result.Data.Select(x => new SharedSpotTicker(ExchangeSymbolCache.ParseSymbol(_topicId, EnvironmentName, null, x.Value.Symbol), x.Value.Symbol, x.Value.LastTrade.Price, x.Value.High.Value24H, x.Value.Low.Value24H, x.Value.Volume.Value24H, x.Value.OpenPrice == 0 ? null : Math.Round(x.Value.LastTrade.Price / x.Value.OpenPrice * 100 - 100, 2))
+            return HttpResult.Ok(result, result.Data.Select(x => 
+            new SharedSpotTicker(
+                ExchangeSymbolCache.ParseSymbol(_topicId, EnvironmentName, null, x.Value.Symbol), 
+                x.Value.Symbol, 
+                x.Value.LastTrade.Price, 
+                x.Value.High.Value24H,
+                x.Value.Low.Value24H,
+                new SharedOrderQuantity(x.Value.Volume.Value24H, x.Value.VolumeWeightedAveragePrice.Value24H * x.Value.Volume.Value24H),
+                x.Value.OpenPrice == 0 ? null : Math.Round(x.Value.LastTrade.Price / x.Value.OpenPrice * 100 - 100, 2))
             {
-                QuoteVolume = x.Value.VolumeWeightedAveragePrice.Value24H * x.Value.Volume.Value24H
             }).ToArray());
         }
 
@@ -300,7 +323,7 @@ namespace Kraken.Net.Clients.SpotApi
                 return HttpResult.Fail<SharedTrade[]>(result);
 
             return HttpResult.Ok(result, result.Data.Data.AsEnumerable().Reverse().Select(x => 
-            new SharedTrade(request.Symbol, symbol, x.Quantity, x.Price, x.Timestamp)
+            new SharedTrade(request.Symbol, symbol, new SharedOrderQuantity(x.Quantity), x.Price, x.Timestamp)
             {
                 Side = x.Side == OrderSide.Buy ? SharedOrderSide.Buy : SharedOrderSide.Sell
             }).ToArray());

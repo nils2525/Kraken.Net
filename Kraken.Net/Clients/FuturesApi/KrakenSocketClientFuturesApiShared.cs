@@ -36,10 +36,9 @@ namespace Kraken.Net.Clients.FuturesApi
                     update.Data.LastPrice,
                     update.Data.HighPrice,
                     update.Data.LowPrice, 
-                    update.Data.Volume,
+                    new SharedOrderQuantity(update.Data.Volume, update.Data.VolumeQuote),
                     update.Data.ChangePercentage24h)
             {
-                QuoteVolume = update.Data.VolumeQuote
             })), ct).ConfigureAwait(false);
 
             return result;
@@ -60,7 +59,7 @@ namespace Kraken.Net.Clients.FuturesApi
 
             var symbols = request.Symbols?.Length > 0 ? request.Symbols.Select(x => x.GetSymbol(FormatSymbol)).ToArray() : [request.Symbol!.GetSymbol(FormatSymbol)];
             var result = await SubscribeToTradeUpdatesAsync(symbols, update => handler(update.ToType(update.Data.Select(x =>
-            new SharedTrade(ExchangeSymbolCache.ParseSymbol(_topicId, EnvironmentName, null, x.Symbol), x.Symbol!, x.Quantity, x.Price, x.Timestamp)
+            new SharedTrade(ExchangeSymbolCache.ParseSymbol(_topicId, EnvironmentName, null, x.Symbol), x.Symbol!, new SharedOrderQuantity(x.Quantity), x.Price, x.Timestamp)
             {
                 Side = x.Side == OrderSide.Buy ? SharedOrderSide.Buy : SharedOrderSide.Sell
             }).ToArray())), ct).ConfigureAwait(false);
