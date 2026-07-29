@@ -17,7 +17,7 @@ For multi-exchange code, use `CryptoExchange.Net.SharedApis` via the `.SharedCli
 dotnet add package KrakenExchange.Net
 ```
 
-Package id: `KrakenExchange.Net`. Main namespace/client name: `Kraken.Net`. Current repository package version: 8.2.0. Targets netstandard2.0, netstandard2.1, net8.0, net9.0, and net10.0. Native AOT is supported.
+Package id: `KrakenExchange.Net`. Main namespace/client name: `Kraken.Net`. Current repository package version: 8.3.0. Targets netstandard2.0, netstandard2.1, net8.0, net9.0, and net10.0. Native AOT is supported.
 
 ## Core Pattern: REST Client Setup
 
