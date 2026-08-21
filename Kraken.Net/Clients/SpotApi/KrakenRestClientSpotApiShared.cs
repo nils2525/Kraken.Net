@@ -148,7 +148,9 @@ namespace Kraken.Net.Clients.SpotApi
                 PriceStep = s.Value.TickSize,
                 MinNotionalValue = s.Value.MinValue,
                 DisplayName = s.Key,
-                BaseAssetType = isTokenized ? SharedAssetType.TradFi : SharedAssetType.Crypto
+                BaseAssetType = isTokenized ? SharedAssetType.TradFi : SharedAssetType.Crypto,
+                MakerFeePercentage = s.Value.FeesMaker.FirstOrDefault()?.FeePercentage,
+                TakerFeePercentage = s.Value.Fees.FirstOrDefault()?.FeePercentage,
             };
 
             if (LibraryHelpers.IsStableCoin(result.QuoteAsset))
@@ -297,9 +299,9 @@ namespace Kraken.Net.Clients.SpotApi
                 ExchangeSymbolCache.ParseSymbol(_topicId, EnvironmentName, null, symbol),
                 symbol,
                 resultTicker.Data.First().Value.BestAsks.Price,
-                resultTicker.Data.First().Value.BestAsks.Quantity,
+                new SharedOrderQuantity(resultTicker.Data.First().Value.BestAsks.Quantity),
                 resultTicker.Data.First().Value.BestBids.Price,
-                resultTicker.Data.First().Value.BestBids.Quantity));
+                new SharedOrderQuantity(resultTicker.Data.First().Value.BestBids.Quantity)));
         }
 
         #endregion
@@ -544,7 +546,7 @@ namespace Kraken.Net.Clients.SpotApi
                 x.Value.OrderId.ToString(),
                 x.Value.Id.ToString(),
                 x.Value.Side == OrderSide.Buy ? SharedOrderSide.Buy : SharedOrderSide.Sell,
-                x.Value.Quantity,
+                new SharedOrderQuantity(x.Value.Quantity, x.Value.QuoteQuantity),
                 x.Value.Price,
                 x.Value.Timestamp)
             {
@@ -594,7 +596,7 @@ namespace Kraken.Net.Clients.SpotApi
                             x.Value.OrderId.ToString(),
                             x.Value.Id.ToString(),
                             x.Value.Side == OrderSide.Buy ? SharedOrderSide.Buy : SharedOrderSide.Sell,
-                            x.Value.Quantity,
+                            new SharedOrderQuantity(x.Value.Quantity, x.Value.QuoteQuantity),
                             x.Value.Price,
                             x.Value.Timestamp)
                         {
@@ -891,7 +893,7 @@ namespace Kraken.Net.Clients.SpotApi
             if (!result.Success)
                 return HttpResult.Fail<SharedOrderBook>(result);
 
-            return HttpResult.Ok(result, new SharedOrderBook(result.Data.Asks, result.Data.Bids));
+            return HttpResult.Ok(result, new SharedOrderBook(SharedQuantityType.BaseAsset, result.Data.Asks, result.Data.Bids));
         }
 
         #endregion

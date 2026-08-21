@@ -11,7 +11,8 @@ namespace Kraken.Net.Interfaces.Clients.SpotApi
         IBookTickerSocketClient,
         IKlineSocketClient,
         IBalanceSocketClient,
-        ISpotOrderSocketClient
+        ISpotOrderSocketClient,
+        ISpotOrderManagementSocketClient
     {
     }
 }

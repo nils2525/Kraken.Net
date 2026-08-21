@@ -89,7 +89,15 @@ namespace Kraken.Net.Clients.SpotApi
             ClearSymbolNameIfIncorrect(request);
 
             var symbols = request.Symbols?.Length > 0 ? request.Symbols.Select(x => x.GetSymbol(FormatSymbol)).ToArray() : [request.Symbol!.GetSymbol(FormatSymbol)];
-            var result = await SubscribeToTickerUpdatesAsync(symbols, update => handler(update.ToType(new SharedBookTicker(ExchangeSymbolCache.ParseSymbol(_topicId, EnvironmentName, null, update.Data.Symbol), update.Data.Symbol, update.Data.BestAskPrice, update.Data.BestAskQuantity, update.Data.BestBidPrice, update.Data.BestBidQuantity))), TriggerEvent.BestOfferChange, ct: ct).ConfigureAwait(false);
+            var result = await SubscribeToTickerUpdatesAsync(symbols, update => handler(
+                update.ToType(
+                    new SharedBookTicker(
+                        ExchangeSymbolCache.ParseSymbol(_topicId, EnvironmentName, null, update.Data.Symbol),
+                        update.Data.Symbol,
+                        update.Data.BestAskPrice,
+                        new SharedOrderQuantity(update.Data.BestAskQuantity),
+                        update.Data.BestBidPrice,
+                        new SharedOrderQuantity(update.Data.BestBidQuantity)))), TriggerEvent.BestOfferChange, ct: ct).ConfigureAwait(false);
 
             return result;
         }
@@ -224,7 +232,7 @@ namespace Kraken.Net.Clients.SpotApi
                                     x.OrderId,
                                     x.LastTradeId.ToString()!,
                                     x.OrderSide == OrderSide.Sell ? SharedOrderSide.Sell : SharedOrderSide.Buy,
-                                    x.LastTradeQuantity ?? 0,
+                                    new SharedOrderQuantity(x.LastTradeQuantity),
                                     x.LastTradePrice ?? 0,
                                     x.Timestamp)
                                 {
@@ -248,6 +256,78 @@ namespace Kraken.Net.Clients.SpotApi
             if (orderStatus == OrderStatusUpdate.Filled) return SharedOrderStatus.Filled;
 
             return SharedOrderStatus.Unknown;
+        }
+        #endregion
+
+
+        #region Spot Order client
+
+        SharedFeeDeductionType ISpotOrderManagementSocketClient.SpotFeeDeductionType => SharedFeeDeductionType.DeductFromOutput;
+        SharedFeeAssetType ISpotOrderManagementSocketClient.SpotFeeAssetType => SharedFeeAssetType.QuoteAsset;
+        SharedOrderType[] ISpotOrderManagementSocketClient.SpotSupportedOrderTypes { get; } = new[] { SharedOrderType.Limit, SharedOrderType.Market, SharedOrderType.LimitMaker };
+        SharedTimeInForce[] ISpotOrderManagementSocketClient.SpotSupportedTimeInForce { get; } = new[] { SharedTimeInForce.GoodTillCanceled, SharedTimeInForce.ImmediateOrCancel, SharedTimeInForce.FillOrKill };
+
+        SharedQuantitySupport ISpotOrderManagementSocketClient.SpotSupportedOrderQuantity { get; } = new SharedQuantitySupport(
+                SharedQuantityType.BaseAsset,
+                SharedQuantityType.BaseAsset,
+                SharedQuantityType.BaseAndQuoteAsset,
+                SharedQuantityType.BaseAsset);
+
+        string ISpotOrderManagementSocketClient.GenerateClientOrderId() => ExchangeHelpers.RandomString(18);
+
+        PlaceSpotOrderSocketOptions ISpotOrderManagementSocketClient.PlaceSpotOrderOptions { get; } = new PlaceSpotOrderSocketOptions(_exchangeName);
+        async Task<QueryResult<SharedId>> ISpotOrderManagementSocketClient.PlaceSpotOrderAsync(PlaceSpotOrderRequest request, CancellationToken ct)
+        {
+            var validationError = SharedClient.PlaceSpotOrderOptions.ValidateRequest(request, this);
+            if (validationError != null)
+                return QueryResult.Fail<SharedId>(Exchange, validationError);
+
+            var result = await PlaceOrderAsync(
+                request.Symbol!.GetSymbol(FormatSymbol),
+                request.Side == SharedOrderSide.Buy ? Enums.OrderSide.Buy : Enums.OrderSide.Sell,
+                GetPlaceOrderType(request.OrderType),
+                request.Quantity?.QuantityInBaseAsset ?? 0,
+                limitPrice: request.Price,
+                quoteQuantity: request.Quantity?.QuantityInQuoteAsset,
+                clientOrderId: request.ClientOrderId,
+                postOnly: request.OrderType == SharedOrderType.LimitMaker,                
+                timeInForce: GetTimeInForce(request.TimeInForce),
+                ct: ct).ConfigureAwait(false);
+
+            if (!result.Success)
+                return QueryResult.Fail<SharedId>(result);
+
+            return QueryResult.Ok(result, new SharedId(result.Data.OrderId));
+        }
+
+        CancelSpotOrderSocketOptions ISpotOrderManagementSocketClient.CancelSpotOrderOptions { get; } = new CancelSpotOrderSocketOptions(_exchangeName, true);
+        async Task<QueryResult<SharedId>> ISpotOrderManagementSocketClient.CancelSpotOrderAsync(CancelOrderRequest request, CancellationToken ct)
+        {
+            var validationError = SharedClient.CancelSpotOrderOptions.ValidateRequest(request, this);
+            if (validationError != null)
+                return QueryResult.Fail<SharedId>(Exchange, validationError);
+
+            var order = await CancelOrderAsync(request.OrderId, ct: ct).ConfigureAwait(false);
+            if (!order.Success)
+                return QueryResult.Fail<SharedId>(order);
+
+            return QueryResult.Ok(order, new SharedId(order.Data.ToString()));
+        }
+
+        private OrderType GetPlaceOrderType(SharedOrderType type)
+        {
+            if (type == SharedOrderType.Market) return OrderType.Market;
+
+            return OrderType.Limit;
+        }
+
+        private TimeInForce? GetTimeInForce(SharedTimeInForce? tif)
+        {
+            if (tif == SharedTimeInForce.ImmediateOrCancel) return TimeInForce.IOC;
+            if (tif == SharedTimeInForce.GoodTillCanceled) return TimeInForce.GTC;
+            if (tif == SharedTimeInForce.FillOrKill) return TimeInForce.FOK;
+
+            return null;
         }
         #endregion
 

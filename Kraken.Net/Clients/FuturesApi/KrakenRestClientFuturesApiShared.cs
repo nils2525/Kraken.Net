@@ -138,7 +138,7 @@ namespace Kraken.Net.Clients.FuturesApi
                 bids = bids.Take(request.Limit.Value).ToArray();
             }
 
-            return HttpResult.Ok(result, new SharedOrderBook(asks, bids));
+            return HttpResult.Ok(result, new SharedOrderBook(SharedQuantityType.BaseAsset, asks, bids));
         }
 
         #endregion
@@ -382,9 +382,9 @@ namespace Kraken.Net.Clients.FuturesApi
                 ExchangeSymbolCache.ParseSymbol(_topicId, EnvironmentName, null, symbol),
                 symbol,
                 resultTicker.Data.BestAskPrice ?? 0,
-                resultTicker.Data.BestAskQuantity ?? 0,
+                new SharedOrderQuantity(resultTicker.Data.BestAskQuantity),
                 resultTicker.Data.BestBidPrice ?? 0,
-                resultTicker.Data.BestBidQuantity ?? 0));
+                new SharedOrderQuantity(resultTicker.Data.BestBidQuantity)));
         }
 
         #endregion
@@ -447,7 +447,7 @@ namespace Kraken.Net.Clients.FuturesApi
             if (!result.Success)
                 return HttpResult.Fail<SharedOpenInterest>(result);
 
-            return HttpResult.Ok(result, new SharedOpenInterest(result.Data.OpenInterest));
+            return HttpResult.Ok(result, new SharedOpenInterest(new SharedOrderQuantity(result.Data.OpenInterest)));
         }
 
         #endregion
@@ -647,13 +647,12 @@ namespace Kraken.Net.Clients.FuturesApi
                             x.OrderId.ToString(),
                             x.Id.ToString(),
                             x.Side == OrderSide.Buy ? SharedOrderSide.Buy : SharedOrderSide.Sell,
-                            x.Quantity,
+                            new SharedOrderQuantity(contractQuantity: x.Quantity),
                             x.Price,
                             x.FillTime)
                         {
                             ClientOrderId = x.ClientOrderId,
                             Price = x.Price,
-                            Quantity = x.Quantity,
                             Role = x.Type == TradeType.Maker ? SharedRole.Maker : SharedRole.Taker
                         }).ToArray(), nextPageRequest);
         }
@@ -696,7 +695,12 @@ namespace Kraken.Net.Clients.FuturesApi
             }
 
             var resultTypes = request.Symbol == null && request.TradingMode == null ? SupportedTradingModes : request.Symbol != null ? new[] { request.Symbol.TradingMode } : new[] { request.TradingMode!.Value };
-            return HttpResult.Ok(result, data.Select(x => new SharedPosition(ExchangeSymbolCache.ParseSymbol(_topicId, EnvironmentName, null, x.Symbol), x.Symbol, Math.Abs(x.Quantity), x.FillTime)
+            return HttpResult.Ok(result, data.Select(x => 
+            new SharedPosition(
+                ExchangeSymbolCache.ParseSymbol(_topicId, EnvironmentName, null, x.Symbol), 
+                x.Symbol, 
+                new SharedOrderQuantity(contractQuantity: Math.Abs(x.Quantity)),
+                x.FillTime)
             {
                 Leverage = x.MaxFixedLeverage,
                 AverageOpenPrice = x.Price,

@@ -81,7 +81,14 @@ namespace Kraken.Net.Clients.FuturesApi
                 return WebSocketResult.Fail<UpdateSubscription>(Exchange, validationError);
 
             var symbols = request.Symbols?.Length > 0 ? request.Symbols.Select(x => x.GetSymbol(FormatSymbol)).ToArray() : [request.Symbol!.GetSymbol(FormatSymbol)];
-            var result = await SubscribeToTickerUpdatesAsync(symbols, update => handler(update.ToType(new SharedBookTicker(ExchangeSymbolCache.ParseSymbol(_topicId, EnvironmentName, null, update.Data.Symbol!), update.Data.Symbol!, update.Data.BestAskPrice, update.Data.BestAskQuantity, update.Data.BestBidPrice, update.Data.BestBidQuantity))), ct).ConfigureAwait(false);
+            var result = await SubscribeToTickerUpdatesAsync(symbols, update => handler(
+                update.ToType(
+                    new SharedBookTicker(ExchangeSymbolCache.ParseSymbol(_topicId, EnvironmentName, null, update.Data.Symbol!),
+                    update.Data.Symbol!,
+                    update.Data.BestAskPrice,
+                    new SharedOrderQuantity(contractQuantity: update.Data.BestAskQuantity),
+                    update.Data.BestBidPrice, 
+                    new SharedOrderQuantity(contractQuantity: update.Data.BestBidQuantity)))), ct).ConfigureAwait(false);
 
             return result;
         }
@@ -193,7 +200,7 @@ namespace Kraken.Net.Clients.FuturesApi
                             x.OrderId.ToString(),
                             x.TradeId.ToString(),
                             x.Buy ? SharedOrderSide.Buy : SharedOrderSide.Sell,
-                            x.Quantity,
+                            new SharedOrderQuantity(contractQuantity: x.Quantity),
                             x.Price,
                             x.Timestamp)
                         {
@@ -224,7 +231,11 @@ namespace Kraken.Net.Clients.FuturesApi
                         return;
 
                     handler(update.ToType<SharedPosition[]>(update.Data.Positions.Select(
-                        x => new SharedPosition(ExchangeSymbolCache.ParseSymbol(_topicId, EnvironmentName, null, x.Symbol), x.Symbol, Math.Abs(x.Balance), update.DataTime ?? update.ReceiveTime)
+                        x => new SharedPosition(
+                            ExchangeSymbolCache.ParseSymbol(_topicId, EnvironmentName, null, x.Symbol), 
+                            x.Symbol, 
+                            new SharedOrderQuantity(contractQuantity: Math.Abs(x.Balance)), 
+                            update.DataTime ?? update.ReceiveTime)
                     {
                         AverageOpenPrice = x.EntryPrice,
                         PositionMode = SharedPositionMode.OneWay,
