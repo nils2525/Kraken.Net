@@ -169,6 +169,8 @@ Use this file to route common user intents to the correct Kraken.Net client memb
 | Read loaded Futures symbol catalog | `IFuturesSymbolRestClient.FuturesSymbolCatalog` |
 | Shared spot ticker REST | `ISpotTickerRestClient.GetSpotTickerAsync(new GetTickerRequest(symbol))` |
 | Shared spot order REST | `ISpotOrderRestClient.PlaceSpotOrderAsync(...)` |
+| Shared spot order socket | `ISpotOrderManagementSocketClient.PlaceSpotOrderAsync(new PlaceSpotOrderRequest(...))` |
+| Shared spot order cancellation socket | `ISpotOrderManagementSocketClient.CancelSpotOrderAsync(new CancelOrderRequest(...))` |
 | Shared futures order REST | `IFuturesOrderRestClient.PlaceFuturesOrderAsync(...)` |
 | Shared balance REST | `IBalanceRestClient.GetBalancesAsync(...)` |
 | Shared ticker socket | `ITickerSocketClient.SubscribeToTickerUpdatesAsync(...)` |
