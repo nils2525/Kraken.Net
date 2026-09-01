@@ -29,6 +29,32 @@ namespace Kraken.Net.Interfaces.Clients.FuturesApi
         Task<HttpResult<KrakenAccountLogResult>> GetAccountLogAsync(DateTime? startTime = null, DateTime? endTime = null, int? fromId = null, int? toId = null, string? sort = null, string? type = null, int? limit = null, CancellationToken ct = default);
 
         /// <summary>
+        /// Get position update events
+        /// <para>
+        /// Docs:<br />
+        /// <a href="https://docs.kraken.com/api/docs/futures-api/history/get-position-events" /><br />
+        /// Endpoint:<br />
+        /// GET /api/history/v3/positions
+        /// </para>
+        /// </summary>
+        /// <param name="startTime">["<c>since</c>"] Return results after this time</param>
+        /// <param name="endTime">["<c>before</c>"] Return results before this time</param>
+        /// <param name="sort">["<c>sort</c>"] Sort asc or desc</param>
+        /// <param name="continuationToken">["<c>continuation_token</c>"] Token for the next page</param>
+        /// <param name="limit">["<c>count</c>"] Amount of entries to be returned</param>
+        /// <param name="tradeable">["<c>tradeable</c>"] Filter by symbol</param>
+        /// <param name="ct">Cancellation token</param>
+        /// <returns></returns>
+        Task<HttpResult<KrakenFuturesPositionEvents>> GetPositionEventsAsync(
+            DateTime? startTime = null,
+            DateTime? endTime = null,
+            string? sort = null,
+            string? continuationToken = null,
+            int? limit = null,
+            string? tradeable = null,
+            CancellationToken ct = default);
+
+        /// <summary>
         /// Get asset balances and margin info
         /// <para>
         /// Docs:<br />
