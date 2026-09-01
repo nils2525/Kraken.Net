@@ -84,5 +84,22 @@ namespace Kraken.Net.Interfaces.Clients.FuturesApi
         /// <param name="toAccount">["<c>toAccount</c>"] The wallet (cash or margin account) from which funds should be debited</param>
         /// <param name="ct">Cancellation token</param>
         /// <returns></returns>
-        Task<HttpResult> TransferAsync(string asset, decimal quantity, string fromAccount, string toAccount, CancellationToken ct = default);    }
+        Task<HttpResult> TransferAsync(string asset, decimal quantity, string fromAccount, string toAccount, CancellationToken ct = default);
+
+        /// <summary>
+        /// Withdraw assets from a Futures wallet to the Kraken Spot wallet
+        /// <para>
+        /// Docs:<br />
+        /// <a href="https://docs.kraken.com/api-reference/transfers/initiate-withdrawal-to-spot-wallet" /><br />
+        /// Endpoint:<br />
+        /// POST /derivatives/api/v3/withdrawal
+        /// </para>
+        /// </summary>
+        /// <param name="asset">["<c>currency</c>"] The asset to withdraw, for example <c>USDT</c></param>
+        /// <param name="quantity">["<c>amount</c>"] The amount to withdraw</param>
+        /// <param name="sourceWallet">["<c>sourceWallet</c>"] The Futures wallet from which the funds should be withdrawn. Defaults to the cash wallet</param>
+        /// <param name="ct">Cancellation token</param>
+        /// <returns>The withdrawal reference</returns>
+        Task<HttpResult<string>> WithdrawToSpotWalletAsync(string asset, decimal quantity, string sourceWallet = "cash", CancellationToken ct = default);
+    }
 }

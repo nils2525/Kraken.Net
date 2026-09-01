@@ -104,6 +104,7 @@ namespace Kraken.Net.Converters
     [JsonSerializable(typeof(KrakenFuturesOrderCancelResult))]
     [JsonSerializable(typeof(KrakenFuturesCancelledOrdersResult))]
     [JsonSerializable(typeof(KrakenFuturesCancelAfterResult))]
+    [JsonSerializable(typeof(KrakenFuturesWithdrawalResult))]
     [JsonSerializable(typeof(KrakenFuturesResult<KrakenTradeBalance>))]
     [JsonSerializable(typeof(KrakenFuturesResult<KrakenLedgerPage>))]
     [JsonSerializable(typeof(KrakenFuturesResult<KrakenTradeVolume>))]

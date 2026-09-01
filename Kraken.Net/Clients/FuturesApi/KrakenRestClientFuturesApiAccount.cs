@@ -75,6 +75,25 @@ namespace Kraken.Net.Clients.FuturesApi
 
         #endregion
 
+        #region Withdraw to Spot Wallet
+
+        /// <inheritdoc />
+        public async Task<HttpResult<string>> WithdrawToSpotWalletAsync(
+            string asset, decimal quantity, string sourceWallet = "cash", CancellationToken ct = default)
+        {
+            var parameters = new Parameters(KrakenExchange._parameterSerializationSettings)
+            {
+                { "amount", quantity.ToString(CultureInfo.InvariantCulture) },
+                { "currency", asset },
+                { "sourceWallet", sourceWallet }
+            };
+
+            var request = _definitions.GetOrCreate(HttpMethod.Post, _baseClient.BaseAddress, "derivatives/api/v3/withdrawal", KrakenExchange.RateLimiter.FuturesApi, 100, true);
+            return await _baseClient.SendAsync<KrakenFuturesWithdrawalResult, string>(request, parameters, ct).ConfigureAwait(false);
+        }
+
+        #endregion
+
         #region Get Account Log
 
         /// <inheritdoc />

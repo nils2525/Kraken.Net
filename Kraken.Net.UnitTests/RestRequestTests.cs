@@ -119,6 +119,7 @@ namespace Kraken.Net.UnitTests
             await tester.ValidateAsync(client => client.FuturesApi.Account.GetPnlCurrencyAsync(), "GetPnlCurrency", "result");
             await tester.ValidateAsync(client => client.FuturesApi.Account.SetPnlCurrencyAsync("ETHUSDT", "ETH"), "SetPnlCurrency");
             await tester.ValidateAsync(client => client.FuturesApi.Account.TransferAsync("ETH", 1, "1", "2"), "Transfer");
+            await tester.ValidateAsync(client => client.FuturesApi.Account.WithdrawToSpotWalletAsync("ETH", 1, "flex"), "WithdrawToSpotWallet", "uid");
             await tester.ValidateAsync(client => client.FuturesApi.Account.GetAccountLogAsync(), "GetAccountLog");
         }
 
