@@ -117,6 +117,11 @@ namespace Kraken.Net.Enums
         /// ["<c>derivativesfuturestrade</c>"] Futures trade
         /// </summary>
         [Map("derivativesfuturestrade")]
-        DerivativesFuturesTrade
+        DerivativesFuturesTrade,
+        /// <summary>
+        /// ["<c>derivativescrossexchangetransfer</c>"] Cross-exchange transfer
+        /// </summary>
+        [Map("derivativescrossexchangetransfer")]
+        DerivativesCrossExchangeTransfer
     }
 }
